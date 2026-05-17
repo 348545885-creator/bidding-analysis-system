@@ -91,6 +91,9 @@ ALIBABA_CLOUD_API_KEY=your_api_key_here
 
 启动服务后，浏览器访问 **http://localhost:5001** 即可使用。
 
+![投标决策辅助分析界面](screenshot.png)
+
+
 ## 项目结构
 
 ```
