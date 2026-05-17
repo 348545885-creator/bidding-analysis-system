@@ -1,0 +1,7 @@
+# 投标决策辅助分析系统 - Python 依赖
+# pip install -r requirements.txt
+
+fastapi>=0.110     # Web 框架
+uvicorn>=0.29      # ASGI 服务器
+selenium>=4.15     # 浏览器自动化（详情页价格提取）
+requests>=2.31     # HTTP 请求（ES 搜索 API 调用）

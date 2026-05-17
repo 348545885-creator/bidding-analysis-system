@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<!--
+投标决策辅助分析系统 - 前端页面
+
+基于 React 18 + ECharts 5 的单页应用。
+提供数据采集、报价分析、统计图表和 AI 对话功能。
+所有 JS 依赖为本地静态文件（/static/），无需 CDN。
+
+依赖: react.min.js / react-dom.min.js / babel.min.js
+      echarts.min.js / axios.min.js
+-->
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>投标决策辅助分析</title>
+    
+    <!-- React & ReactDOM -->
+    <script src="/static/react.min.js"></script>
+    <script src="/static/react-dom.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="/static/babel.min.js"></script>
+    
+    <!-- ECharts -->
+    <script src="/static/echarts.min.js"></script>
+    
+    <!-- Axios -->
+    <script src="/static/axios.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #e8edf5 0%, #d5dde8 50%, #c8d3e0 100%);
+            min-height: 100vh;
+        }
+
+        #root {
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e6b 0%, #3d5a80 50%, #4a6fa5 100%);
+            border-radius: 14px;
+            padding: 28px 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 24px rgba(44, 62, 107, 0.15);
+        }
+
+        .header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            font-weight: 400;
+        }
+
+        .card {
+            background: white;
+            border-radius: 14px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: #2c3e6b;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #eef2f7;
+        }
+
+        .kpi-card {
+            background: linear-gradient(135deg, #2c3e6b 0%, #3d5a80 50%, #4a6fa5 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 12px rgba(44, 62, 107, 0.12);
+        }
+
+        .kpi-label {
+            font-size: 13px;
+            opacity: 0.85;
+            margin-bottom: 8px;
+            letter-spacing: 0.3px;
+        }
+
+        .kpi-value {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .form-group label,
+        .form-group-label {
+            display: block;
+            font-size: 14px;
+            color: #4a5568;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 11px 16px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #2d3748;
+            background: #fdfdfd;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #4a6fa5;
+            box-shadow: 0 0 0 3px rgba(74, 111, 165, 0.12);
+            background: #ffffff;
+        }
+
+        .btn {
+            padding: 11px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            letter-spacing: 0.3px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #2c3e6b 0%, #4a6fa5 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1.5px);
+            box-shadow: 0 6px 20px rgba(44, 62, 107, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #2b7a4b 0%, #3da05e 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-1.5px);
+            box-shadow: 0 6px 20px rgba(43, 122, 75, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 400px;
+        }
+
+        .result-box {
+            background: #f7fafc;
+            border-left: 4px solid #4a6fa5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            max-height: 500px;
+            overflow-y: auto;
+            color: #2d3748;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        thead {
+            background: linear-gradient(135deg, #2c3e6b 0%, #4a6fa5 100%);
+            color: white;
+        }
+
+        th {
+            padding: 14px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+            letter-spacing: 0.3px;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #edf2f7;
+            color: #4a5568;
+        }
+
+        /* 所有列默认保持一行 */
+        th, td {
+            white-space: nowrap;
+        }
+        /* 项目名称列允许换行 */
+        td:nth-child(3) {
+            white-space: normal;
+            word-break: break-all;
+            max-width: 400px;
+        }
+        /* 中标价列 */
+        td:nth-child(4) {
+            white-space: nowrap;
+        }
+        /* 公告日期列 */
+        td:nth-child(5) {
+            white-space: nowrap;
+            min-width: 100px;
+        }
+
+        tbody tr:hover {
+            background: #f7fafc;
+        }
+
+        .alert {
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .alert-info {
+            background: #ebf4ff;
+            border-left: 4px solid #4a6fa5;
+            color: #2c3e6b;
+        }
+
+        .alert-success {
+            background: #f0fff4;
+            border-left: 4px solid #38a169;
+            color: #276749;
+        }
+
+        .alert-error {
+            background: #fff5f5;
+            border-left: 4px solid #e53e3e;
+            color: #c53030;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .kpi-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .kpi-label {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .kpi-value {
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label,
+        .form-group-label {
+            display: block;
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(17, 153, 142, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 400px;
+        }
+
+        .result-box {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 16px 20px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        /* ── AI Chat ── */
+        .chat-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2c3e6b, #4a6fa5);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            box-shadow: 0 4px 16px rgba(44,62,107,0.3);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+        .chat-btn:hover { transform: scale(1.1); }
+        .chat-panel {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 380px;
+            max-height: 520px;
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            display: none;
+            flex-direction: column;
+            z-index: 1000;
+            overflow: hidden;
+        }
+        .chat-panel.open { display: flex; }
+        .chat-header {
+            background: linear-gradient(135deg, #2c3e6b, #4a6fa5);
+            color: #fff;
+            padding: 14px 18px;
+            font-weight: 600;
+            font-size: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .chat-header button {
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            font-size: 18px;
+            opacity: 0.7;
+        }
+        .chat-header button:hover { opacity: 1; }
+        .chat-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px;
+            min-height: 280px;
+            max-height: 360px;
+        }
+        .chat-msg {
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-msg.user { align-items: flex-end; }
+        .chat-msg.assistant { align-items: flex-start; }
+        .chat-msg .bubble {
+            max-width: 85%;
+            padding: 10px 14px;
+            border-radius: 14px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+        .chat-msg.user .bubble {
+            background: #2c3e6b;
+            color: #fff;
+            border-bottom-right-radius: 4px;
+        }
+        .chat-msg.assistant .bubble {
+            background: #f0f2f5;
+            color: #333;
+            border-bottom-left-radius: 4px;
+        }
+        .chat-msg .time {
+            font-size: 11px;
+            color: #999;
+            margin-top: 3px;
+        }
+        .chat-input-area {
+            display: flex;
+            padding: 10px 12px;
+            border-top: 1px solid #eee;
+            background: #fafafa;
+        }
+        .chat-input-area input {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            padding: 8px 14px;
+            font-size: 14px;
+            outline: none;
+        }
+        .chat-input-area input:focus { border-color: #4a6fa5; }
+        .chat-input-area button {
+            margin-left: 8px;
+            border: none;
+            background: #2c3e6b;
+            color: #fff;
+            border-radius: 20px;
+            padding: 8px 18px;
+            cursor: pointer;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        .chat-input-area button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .chat-empty {
+            color: #aaa;
+            text-align: center;
+            padding: 60px 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // API基础地址 - 指向Flask后端服务
+        const API_BASE = 'http://localhost:5001';
+
+        function App() {
+            const [stats, setStats] = useState({ total: 0, cities: 0 });
+            const [apiStatus, setApiStatus] = useState('检测中');
+            const [filterOptions, setFilterOptions] = useState({ cities: [], project_types: [] });
+            const [projects, setProjects] = useState([]);
+            const [loading, setLoading] = useState(false);
+            const [scraping, setScraping] = useState(false);
+            
+            // 表单状态
+            const [formData, setFormData] = useState({
+                control_price: '10000000',
+                bidder_count_min: '3',
+                bidder_count_max: '8',
+                project_type: '',
+                city: ''
+            });
+            
+            const [analysisResult, setAnalysisResult] = useState(null);
+            
+            // 采集日期范围
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+            const [scrapeDateRange, setScrapeDateRange] = useState({
+                start: thirtyDaysAgo,
+                end: todayStr
+            });
+            
+            // 图表引用
+            const cityChartRef = useRef(null);
+            const typeChartRef = useRef(null);
+            const cityChartInstance = useRef(null);
+            const typeChartInstance = useRef(null);
+
+            // AI 对话状态
+            const [chatOpen, setChatOpen] = useState(false);
+            const [chatMsg, setChatMsg] = useState('');
+            const [chatHistory, setChatHistory] = useState([]);
+            const [chatLoading, setChatLoading] = useState(false);
+            const chatBodyRef = useRef(null);
+            const chatInputRef = useRef(null);
+
+            useEffect(() => {
+                if (chatBodyRef.current) {
+                    chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
+                }
+            }, [chatHistory]);
+
+            useEffect(() => {
+                checkApiStatus();
+                loadStatistics();
+                loadFilterOptions();
+                loadRecentProjects();
+            }, []);
+
+            const formatNumber = (x) => {
+                if (!x) return '0';
+                const n = parseFloat(String(x).replace(/,/g, ''));
+                return isNaN(n) ? x : n.toLocaleString('zh-CN');
+            };
+
+            const renderCityChart = (data) => {
+                if (!cityChartRef.current) return;
+                if (!cityChartInstance.current) {
+                    cityChartInstance.current = echarts.init(cityChartRef.current);
+                }
+                cityChartInstance.current.setOption({
+                    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                    grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+                    xAxis: { type: 'category', data: data.map(d => d.city), axisLabel: { fontSize: 11, rotate: 45 } },
+                    yAxis: { type: 'value', axisLabel: { fontSize: 11 } },
+                    series: [{ type: 'bar', data: data.map(d => d.count), itemStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#667eea'},{offset:1,color:'#764ba2'}]) } }]
+                });
+            };
+
+            const renderTypeChart = (data) => {
+                if (!typeChartRef.current) return;
+                if (!typeChartInstance.current) {
+                    typeChartInstance.current = echarts.init(typeChartRef.current);
+                }
+                typeChartInstance.current.setOption({
+                    tooltip: { trigger: 'item' },
+                    series: [{
+                        type: 'pie', radius: ['40%','70%'], center: ['50%','50%'],
+                        data: data.map(d => ({ name: d.type, value: d.count })),
+                        label: { fontSize: 13 },
+                        color: ['#667eea','#f093fb','#4facfe']
+                    }]
+                });
+            };
+
+            const checkApiStatus = async () => {
+                try {
+                    const response = await axios.get(`${API_BASE}/api/test`);
+                    setApiStatus(response.data.success ? '✓ 正常' : '✗ 异常');
+                } catch (error) {
+                    setApiStatus('✗ 离线');
+                }
+            };
+
+            const loadStatistics = async () => {
+                try {
+                    const res = await axios.get(`${API_BASE}/api/statistics`);
+                    if (res.data.success) {
+                        setStats({ total: res.data.total, cities: res.data.city_distribution.filter(c => c.count > 0).length });
+                        renderCityChart(res.data.city_distribution);
+                        renderTypeChart(res.data.type_distribution);
+                    }
+                } catch (e) {}
+            };
+
+            const loadFilterOptions = async () => {
+                try {
+                    const res = await axios.get(`${API_BASE}/api/filter/options`);
+                    if (res.data.success) setFilterOptions(res.data.options);
+                } catch (e) {
+                    console.warn('获取筛选选项失败:', e);
+                }
+            };
+
+            const loadRecentProjects = async () => {
+                try {
+                    const res = await axios.get(`${API_BASE}/api/projects?page=1&page_size=10`);
+                    if (res.data.success) setProjects(res.data.projects);
+                } catch (e) {}
+            };
+
+            const handleInputChange = (e) => {
+                const { name, value } = e.target;
+                setFormData(prev => ({ ...prev, [name]: value }));
+            };
+
+            const analyzePrice = async () => {
+                setLoading(true);
+                setAnalysisResult(null);
+                try {
+                    const res = await axios.post(`${API_BASE}/api/analyze`, formData);
+                    if (res.data.success) setAnalysisResult(res.data.analysis);
+                    else alert(res.data.error || '分析失败');
+                } catch (e) {
+                    alert('请求失败: ' + (e.response?.data?.error || e.message));
+                }
+                setLoading(false);
+            };
+
+            const scrapeData = async () => {
+                setScraping(true);
+                try {
+                    const res = await axios.post(`${API_BASE}/api/trigger-scrape`, {
+                        max_pages: 20,
+                        start_date: scrapeDateRange.start,
+                        end_date: scrapeDateRange.end
+                    });
+                    if (res.data.success) {
+                        alert(res.data.message);
+                        loadStatistics();
+                        loadRecentProjects();
+                    } else {
+                        alert(res.data.error || '采集失败');
+                    }
+                } catch (e) {
+                    alert('请求失败: ' + (e.response?.data?.error || e.message));
+                }
+                setScraping(false);
+            };
+
+            const sendChatMessage = async () => {
+                const msg = chatMsg.trim();
+                if (!msg || chatLoading) return;
+                setChatMsg('');
+                setChatHistory(prev => [...prev, { role: 'user', content: msg }]);
+                setChatLoading(true);
+                try {
+                    const res = await axios.post(`${API_BASE}/api/ai/chat`, {
+                        message: msg,
+                        history: chatHistory.slice(-10)
+                    });
+                    setChatHistory(prev => [...prev, { role: 'assistant', content: res.data.message || '（无响应）' }]);
+                } catch (err) {
+                    setChatHistory(prev => [...prev, { role: 'assistant', content: '⚠️ AI 服务暂不可用，请检查配置。' }]);
+                }
+                setChatLoading(false);
+            };
+
+            const handleChatKeyDown = (e) => {
+                if (e.key === 'Enter') sendChatMessage();
+            };
+
+            const formatTime = () => {
+                const d = new Date();
+                return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+            };
+
+            /* ── UI 模块化渲染函数 ── */
+
+            const renderHeader = () => (
+                <div className="header">
+                    <h1>🎯 投标决策辅助分析</h1>
+                    <p>基于历史数据的智能投标决策分析平台</p>
+                </div>
+            );
+
+            const renderKPICards = () => (
+                <div className="kpi-grid">
+                    <div className="kpi-card">
+                        <div className="kpi-label">数据库项目总数</div>
+                        <div className="kpi-value">{stats.total}</div>
+                    </div>
+                    <div className="kpi-card">
+                        <div className="kpi-label">覆盖城市数</div>
+                        <div className="kpi-value">{stats.cities}</div>
+                    </div>
+                    <div className="kpi-card">
+                        <div className="kpi-label">API 状态</div>
+                        <div className="kpi-value" style={{ fontSize: '18px' }}>{apiStatus}</div>
+                    </div>
+                </div>
+            );
+
+            const renderDataCollection = () => (
+                <div className="card">
+                    <div className="card-title">📥 数据采集</div>
+                    <div className="alert alert-info">
+                        从 <strong>四川省公共资源交易信息网</strong> 实时采集最新工程项目数据，数据将自动存入系统用于分析和统计。
+                    </div>
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>采集起始日期</label>
+                            <input type="date" className="form-control"
+                                value={scrapeDateRange.start}
+                                onChange={e => setScrapeDateRange(prev => ({...prev, start: e.target.value}))} />
+                        </div>
+                        <div className="form-group">
+                            <label>采集结束日期</label>
+                            <input type="date" className="form-control"
+                                value={scrapeDateRange.end}
+                                onChange={e => setScrapeDateRange(prev => ({...prev, end: e.target.value}))} />
+                        </div>
+                    </div>
+                    <div style={{ marginTop: '20px' }}>
+                        <button className="btn btn-success" onClick={scrapeData} disabled={scraping}>
+                            {scraping ? <span className="loading"></span> : '📊 开始采集'}
+                        </button>
+                        {scraping && <span style={{ marginLeft: '12px', color: '#666' }}>正在采集数据，请耐心等待...</span>}
+                        <span className="badge badge-blue" style={{ marginLeft: '12px' }}>当前 {stats.total} 条数据</span>
+                    </div>
+                </div>
+            );
+
+            const renderAnalysisPanel = () => (
+                <div className="card">
+                    <div className="card-title">💰 智能报价分析</div>
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label htmlFor="control_price">招标控制价（元）</label>
+                            <input type="number" id="control_price" name="control_price" className="form-control"
+                                placeholder="例如：10000000" value={formData.control_price} onChange={handleInputChange} />
+                        </div>
+                        <div className="form-group">
+                            <div className="form-group-label">投标人数量范围</div>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <input type="number" id="bidder_count_min" name="bidder_count_min"
+                                    className="form-control" placeholder="最小值" aria-label="投标人数量最小值"
+                                    value={formData.bidder_count_min} onChange={handleInputChange} style={{ flex: 1 }} />
+                                <input type="number" id="bidder_count_max" name="bidder_count_max"
+                                    className="form-control" placeholder="最大值" aria-label="投标人数量最大值"
+                                    value={formData.bidder_count_max} onChange={handleInputChange} style={{ flex: 1 }} />
+                            </div>
+                        </div>
+                    </div>
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label htmlFor="project_type">项目类型</label>
+                            <select id="project_type" name="project_type" className="form-control"
+                                value={formData.project_type} onChange={handleInputChange}>
+                                <option value="">全部类型</option>
+                                {filterOptions.project_types.map(type => (
+                                    <option key={type} value={type}>{type}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="city">项目城市</label>
+                            <select id="city" name="city" className="form-control"
+                                value={formData.city} onChange={handleInputChange}>
+                                <option value="">全部城市</option>
+                                {filterOptions.cities.map(city => (
+                                    <option key={city} value={city}>{city}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                    <div style={{ marginTop: '20px' }}>
+                        <button className="btn btn-primary" onClick={analyzePrice} disabled={loading}>
+                            {loading ? <span className="loading"></span> : '🔍 开始分析'}
+                        </button>
+                    </div>
+                    {analysisResult && (
+                        <div className="result-box" style={{ marginTop: '20px' }}>
+                            {analysisResult.report_text}
+                        </div>
+                    )}
+                </div>
+            );
+
+            const renderCharts = () => (
+                <div className="grid-2">
+                    <div className="card">
+                        <div className="card-title">📊 城市分布统计</div>
+                        <div ref={cityChartRef} className="chart-container"></div>
+                    </div>
+                    <div className="card">
+                        <div className="card-title">📈 项目类型分布</div>
+                        <div ref={typeChartRef} className="chart-container"></div>
+                    </div>
+                </div>
+            );
+
+            const renderProjectTable = () => (
+                <div className="card">
+                    <div className="card-title">📋 最近项目列表</div>
+                    <div className="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>城市</th><th>项目类型</th><th>项目名称</th><th>中标价（元）</th><th>公告日期</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {projects.length === 0 ? (
+                                    <tr><td colSpan="5" style={{ textAlign: 'center', padding: '40px', color: '#999' }}>暂无数据</td></tr>
+                                ) : (
+                                    projects.map((project, index) => (
+                                        <tr key={index}>
+                                            <td>{project.city || '-'}</td>
+                                            <td><span className="badge badge-blue">{project.project_type || '-'}</span></td>
+                                            <td>{project.project_name || '-'}</td>
+                                            <td style={{ color: '#667eea', fontWeight: '600' }}>
+                                                {project.winning_price ? '¥' + formatNumber(project.winning_price) : '-'}
+                                            </td>
+                                            <td>{project.announcement_date || '-'}</td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+
+            const renderAIChat = () => (
+                <>
+                    <button className="chat-btn" onClick={() => setChatOpen(!chatOpen)} title="AI 助手">🤖</button>
+                    <div className={`chat-panel ${chatOpen ? 'open' : ''}`}>
+                        <div className="chat-header">
+                            <span>🤖 AI 报价助手</span>
+                            <button onClick={() => setChatOpen(false)}>✕</button>
+                        </div>
+                        <div className="chat-body" ref={chatBodyRef}>
+                            {chatHistory.length === 0 ? (
+                                <div className="chat-empty">咨询投标报价、分析策略等问题</div>
+                            ) : (
+                                chatHistory.map((m, i) => (
+                                    <div key={i} className={`chat-msg ${m.role}`}>
+                                        <div className="bubble">{m.content}</div>
+                                        <div className="time">{formatTime()}</div>
+                                    </div>
+                                ))
+                            )}
+                            {chatLoading && <div className="chat-msg assistant"><div className="bubble" style={{ color: '#999' }}>思考中...</div></div>}
+                        </div>
+                        <div className="chat-input-area">
+                            <input ref={chatInputRef} value={chatMsg} onChange={e => setChatMsg(e.target.value)}
+                                onKeyDown={handleChatKeyDown} placeholder="输入您的问题..." disabled={chatLoading} />
+                            <button onClick={sendChatMessage} disabled={chatLoading || !chatMsg.trim()}>发送</button>
+                        </div>
+                    </div>
+                </>
+            );
+
+            return (
+                <div className="container">
+                    {renderHeader()}
+                    {renderKPICards()}
+                    {renderDataCollection()}
+                    {renderAnalysisPanel()}
+                    {renderCharts()}
+                    {renderProjectTable()}
+                    {renderAIChat()}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
