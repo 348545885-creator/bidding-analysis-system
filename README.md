@@ -91,8 +91,9 @@ ALIBABA_CLOUD_API_KEY=your_api_key_here
 
 启动服务后，浏览器访问 **http://localhost:5001** 即可使用。
 
-![投标决策辅助分析界面](screenshot.png)
+下图展示了当前项目的前端界面：
 
+![投标决策辅助分析界面](screenshot.png)
 
 ## 项目结构
 
@@ -141,4 +142,3 @@ ALIBABA_CLOUD_API_KEY=your_api_key_here
 - [x] 21 地市州城市分布 + 3 种项目类型可视化
 - [x] 多维度筛选（城市、类型、日期、关键词）
 - [x] AI 对话助手（阿里云百炼）
-
